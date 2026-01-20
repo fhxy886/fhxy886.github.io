@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>武器单次抽奖（带图）</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "微软雅黑", sans-serif;
+        }
+        body {
+            background-color: #1a1a1a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        /* 长方形抽奖主容器 */
+        .lottery-box {
+            width: 100%;
+            max-width: 600px;
+            height: 500px;
+            background: linear-gradient(135deg, #2d2d2d, #121212);
+            border-radius: 12px;
+            box-shadow: 0 0 30px rgba(255, 99, 71, 0.3);
+            border: 2px solid #ff6347;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            align-items: center;
+            padding: 20px 30px;
+        }
+        .lottery-title {
+            color: #fff;
+            font-size: 28px;
+            font-weight: bold;
+            text-shadow: 0 0 10px #ff6347;
+        }
+        /* 奖品图片+文字显示区域 */
+        .prize-show {
+            width: 100%;
+            height: 160px;
+            background-color: #222;
+            border: 1px solid #ff6347;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            color: #fff;
+            font-size: 32px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            text-shadow: 0 0 15px #ff6347;
+        }
+        /* 奖品图片样式 */
+        .prize-img {
+            width: 100px;
+            height: 100px;
+            border-radius: 8px;
+            object-fit: cover;
+            border: 2px solid #fff;
+            display: none; /* 默认隐藏，抽奖后显示 */
+        }
+        /* 抽奖按钮 */
+        .lottery-btn {
+            width: 180px;
+            height: 60px;
+            background: linear-gradient(#ff6347, #ff4500);
+            border: none;
+            border-radius: 30px;
+            color: #fff;
+            font-size: 22px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(255, 99, 71, 0.5);
+            transition: all 0.3s;
+        }
+        .lottery-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(255, 99, 71, 0.8);
+        }
+        .lottery-btn:disabled {
+            background: linear-gradient(#888, #666);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        /* 兑换说明区域 */
+        .exchange-info {
+            width: 100%;
+            padding: 15px;
+            background-color: #222;
+            border: 1px solid #ff6347;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            line-height: 1.6;
+            display: none; /* 默认隐藏，抽奖后显示 */
+        }
+        .exchange-info h4 {
+            color: #ff6347;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+        /* 适配手机 */
+        @media (max-width: 480px) {
+            .lottery-title {
+                font-size: 22px;
+            }
+            .prize-show {
+                font-size: 24px;
+                height: 140px;
+                gap: 10px;
+            }
+            .prize-img {
+                width: 80px;
+                height: 80px;
+            }
+            .lottery-btn {
+                width: 150px;
+                height: 50px;
+                font-size: 18px;
+            }
+            .exchange-info {
+                font-size: 13px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="lottery-box">
+        <div class="lottery-title">武器单次抽奖</div>
+        <div class="prize-show" id="prizeShow">
+            <img src="" alt="奖品图片" class="prize-img" id="prizeImg">
+            <span id="prizeText">点击开始抽奖</span>
+        </div>
+        <button class="lottery-btn" id="lotteryBtn">开始抽奖</button>
+        <!-- 兑换说明 -->
+        <div class="exchange-info" id="exchangeInfo">
+            <h4>🎁 兑换说明</h4>
+            <p>1. 奖品请联系客服兑换</p>
+            <p>2. 有效期为24小时，抽到不兑换默认取消</p>
+            <p>3. 单人单次禁止恶意刷奖</p>
+            <p>4. 最终解释方为喜嘻工作室</p>
+        </div>
+    </div>
+
+    <script>
+        // 获取元素
+        const prizeImg = document.getElementById('prizeImg');
+        const prizeText = document.getElementById('prizeText');
+        const lotteryBtn = document.getElementById('lotteryBtn');
+        const exchangeInfo = document.getElementById('exchangeInfo');
+        // 奖品配置：精准匹配你的图片命名
+        const prizes = [
+            {name: 'aug替死鬼', img: 'aug.png'},
+            {name: '弗拉迪尾刺', img: 'weici.png'},
+            {name: '火焰刀', img: 'huoyan.png'},
+            {name: '蝴蝶刀', img: 'hudie.png'},
+            {name: '机械拳套', img: 'quantao.png'},
+            {name: '双截棍', img: 'shuangjie.png'}
+        ];
+        // 抽奖动画时长（毫秒）
+        const animateTime = 1500;
+        // 抽奖次数限制：仅1次，抽完永久禁用
+        let lotteryCount = 0;
+        const maxCount = 1;
+
+        // 抽奖点击事件
+        lotteryBtn.addEventListener('click', startLottery);
+
+        function startLottery() {
+            // 判断是否超过抽奖次数
+            if (lotteryCount >= maxCount) {
+                prizeText.textContent = '已抽完，无次数';
+                return;
+            }
+            lotteryBtn.disabled = true;
+            prizeText.textContent = '抽奖中...';
+            prizeImg.style.display = 'none';
+            exchangeInfo.style.display = 'none'; // 隐藏兑换说明
+            // 随机滚动动画，模拟抽奖效果
+            const startTime = Date.now();
+            const timer = setInterval(() => {
+                const randomIndex = Math.floor(Math.random() * prizes.length);
+                prizeText.textContent = prizes[randomIndex].name;
+            }, 80);
+            // 结束动画，确定中奖结果
+            setTimeout(() => {
+                clearInterval(timer);
+                lotteryCount++;
+                const winIndex = Math.floor(Math.random() * prizes.length);
+                const winPrize = prizes[winIndex];
+                // 显示中奖图片+文字
+                prizeImg.src = winPrize.img;
+                prizeImg.alt = winPrize.name;
+                prizeImg.style.display = 'block';
+                prizeText.textContent = winPrize.name;
+                // 显示兑换说明
+                exchangeInfo.style.display = 'block';
+                // 永久禁用按钮，不再恢复
+            }, animateTime);
+        }
+    </script>
+</body>
+</html>
